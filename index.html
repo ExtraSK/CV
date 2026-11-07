@@ -33,8 +33,8 @@
           <span class="stat-lbl">Current teams</span>
         </div>
         <div class="stat">
-          <span class="stat-num">8</span>
-          <span class="stat-lbl">Past servers</span>
+          <span class="stat-num" id="visitCount">0</span>
+          <span class="stat-lbl">Visits</span>
         </div>
       </div>
     </header>
@@ -44,6 +44,7 @@
       <a href="#skills" class="nav-item">Skills</a>
       <a href="#experience" class="nav-item">Experience</a>
       <a href="#plugins" class="nav-item">Plugins</a>
+      <a href="#work" class="nav-item">Work</a>
       <a href="#contact" class="nav-item">Contact</a>
     </nav>
 
@@ -301,10 +302,29 @@
         </div>
       </section>
 
+      <section id="work" class="card card-wide">
+        <div class="card-head">
+          <h2 class="card-title">Work</h2>
+          <span class="card-index">05</span>
+        </div>
+        <div class="card-body">
+          <div class="plugin-grid">
+            <a href="https://desktop.extrask.site" target="_blank" rel="noopener" class="plugin">
+              <span class="plugin-name">Desktop</span>
+              <span class="plugin-desc">A cool virtual desktop with some nice features.</span>
+            </a>
+            <a href="https://music.extrask.site" target="_blank" rel="noopener" class="plugin">
+              <span class="plugin-name">OnlineAudio</span>
+              <span class="plugin-desc">A online music player, add audio files and play them online.</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section id="contact" class="card card-wide">
         <div class="card-head">
           <h2 class="card-title">Contact</h2>
-          <span class="card-index">05</span>
+          <span class="card-index">06</span>
         </div>
         <div class="card-body contact-grid">
           <a href="mailto:contact@extrask.site" class="contact-item">
@@ -337,6 +357,128 @@
     </footer>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    (function () {
+      var yearEl = document.getElementById("year");
+      if (yearEl) {
+        yearEl.textContent = new Date().getFullYear();
+      }
+
+      var skills = document.querySelectorAll(".skill");
+      var skillObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              var skill = entry.target;
+              var fill = skill.querySelector(".skill-fill");
+              var val = skill.getAttribute("data-val");
+              if (fill) {
+                fill.style.width = val + "%";
+              }
+              skillObserver.unobserve(skill);
+            }
+          });
+        },
+        { threshold: 0.2 }
+      );
+
+      skills.forEach(function (skill) {
+        skillObserver.observe(skill);
+      });
+
+      var navItems = document.querySelectorAll(".nav-item");
+      var sections = document.querySelectorAll(".card");
+
+      function setActive(id) {
+        navItems.forEach(function (link) {
+          if (link.getAttribute("href") === "#" + id) {
+            link.classList.add("active");
+          } else {
+            link.classList.remove("active");
+          }
+        });
+      }
+
+      navItems.forEach(function (link) {
+        link.addEventListener("click", function () {
+          var id = link.getAttribute("href").slice(1);
+          setActive(id);
+        });
+      });
+
+      var spyObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              setActive(entry.target.id);
+            }
+          });
+        },
+        {
+          threshold: 0,
+          rootMargin: "-20% 0px -60% 0px"
+        }
+      );
+
+      sections.forEach(function (section) {
+        spyObserver.observe(section);
+      });
+
+      var copyBtn = document.getElementById("copyDiscord");
+      if (copyBtn) {
+        copyBtn.addEventListener("click", function () {
+          var text = copyBtn.getAttribute("data-copy");
+          navigator.clipboard
+            .writeText(text)
+            .then(function () {
+              copyBtn.classList.add("copied");
+              copyBtn.textContent = "Copied";
+              setTimeout(function () {
+                copyBtn.classList.remove("copied");
+                copyBtn.textContent = "Copy";
+              }, 2000);
+            })
+            .catch(function () {
+              copyBtn.textContent = "Failed";
+              setTimeout(function () {
+                copyBtn.textContent = "Copy";
+              }, 2000);
+            });
+        });
+      }
+
+      var visitCountEl = document.getElementById("visitCount");
+      if (visitCountEl) {
+        var STORE_KEY = "extrask_visits";
+        var hasVisited = false;
+
+        try {
+          hasVisited = localStorage.getItem(STORE_KEY) !== null;
+        } catch (e) {
+          hasVisited = false;
+        }
+
+        var count = 0;
+        try {
+          var storedCount = localStorage.getItem(STORE_KEY + "_count");
+          if (storedCount) {
+            count = parseInt(storedCount, 10);
+          }
+        } catch (e) {
+          count = 0;
+        }
+
+        if (!hasVisited) {
+          count += 1;
+          try {
+            localStorage.setItem(STORE_KEY, "true");
+            localStorage.setItem(STORE_KEY + "_count", String(count));
+          } catch (e) {}
+        }
+
+        visitCountEl.textContent = count;
+      }
+    })();
+  </script>
 </body>
 </html>
