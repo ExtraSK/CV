@@ -92,16 +92,15 @@
     var NAMESPACE = "extrask-site";
     var KEY = "visits";
     var BASE_URL = "https://abacus.jasoncameron.dev";
-    var STORAGE_KEY = "extrask_visit_cache";
+    var STORE_KEY = "extrask_visitor_ip";
+    var CACHE_KEY = "extrask_visit_cache";
 
     var renderCount = function (count) {
       if (typeof count === "number") {
         visitCountEl.textContent = count.toLocaleString();
         try {
-          localStorage.setItem(STORAGE_KEY, String(count));
+          localStorage.setItem(CACHE_KEY, String(count));
         } catch (e) {}
-      } else {
-        visitCountEl.textContent = "0";
       }
     };
 
@@ -126,7 +125,7 @@
 
     var cached = null;
     try {
-      var stored = localStorage.getItem(STORAGE_KEY);
+      var stored = localStorage.getItem(CACHE_KEY);
       if (stored !== null) {
         cached = parseInt(stored, 10);
       }
@@ -136,28 +135,40 @@
       visitCountEl.textContent = cached.toLocaleString();
     }
 
-    fetchCount("/hit/" + NAMESPACE + "/" + KEY)
-      .then(function (newCount) {
-        if (newCount !== null) {
-          renderCount(newCount);
-        } else {
+    fetch("https://api.ipify.org?format=json")
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (ipData) {
+        var currentIp = ipData.ip;
+        var savedIp = null;
+        try {
+          savedIp = localStorage.getItem(STORE_KEY);
+        } catch (e) {}
+
+        if (savedIp === currentIp) {
           return fetchCount("/get/" + NAMESPACE + "/" + KEY);
+        } else {
+          try {
+            localStorage.setItem(STORE_KEY, currentIp);
+          } catch (e) {}
+          return fetchCount("/hit/" + NAMESPACE + "/" + KEY);
         }
       })
-      .then(function (currentCount) {
-        if (currentCount !== null && currentCount !== undefined) {
-          renderCount(currentCount);
+      .then(function (count) {
+        if (count !== null) {
+          renderCount(count);
         } else if (visitCountEl.textContent === "...") {
-          renderCount(0);
+          visitCountEl.textContent = "0";
         }
       })
       .catch(function () {
         fetchCount("/get/" + NAMESPACE + "/" + KEY)
-          .then(function (currentCount) {
-            if (currentCount !== null) {
-              renderCount(currentCount);
+          .then(function (count) {
+            if (count !== null) {
+              renderCount(count);
             } else if (visitCountEl.textContent === "...") {
-              renderCount(0);
+              visitCountEl.textContent = "0";
             }
           })
           .catch(function () {
