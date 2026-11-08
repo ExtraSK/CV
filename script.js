@@ -86,4 +86,22 @@
         });
     });
   }
+
+  var visitCountEl = document.getElementById("visitCount");
+  if (visitCountEl) {
+    fetch("https://api.countapi.xyz/hit/extrask-site/visits")
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        if (data && typeof data.value === "number") {
+          visitCountEl.textContent = data.value.toLocaleString();
+        } else {
+          visitCountEl.textContent = "0";
+        }
+      })
+      .catch(function () {
+        visitCountEl.textContent = "0";
+      });
+  }
 })();
