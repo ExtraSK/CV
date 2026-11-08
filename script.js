@@ -89,19 +89,82 @@
 
   var visitCountEl = document.getElementById("visitCount");
   if (visitCountEl) {
-    fetch("https://api.countapi.xyz/hit/extrask-site/visits")
-      .then(function (response) {
-        return response.json();
-      })
-      .then(function (data) {
-        if (data && typeof data.value === "number") {
-          visitCountEl.textContent = data.value.toLocaleString();
+    var NAMESPACE = "extrask-site";
+    var KEY = "visits";
+    var BASE_URL = "https://abacus.jasoncameron.dev";
+    var STORAGE_KEY = "extrask_visit_cache";
+
+    var renderCount = function (count) {
+      if (typeof count === "number") {
+        visitCountEl.textContent = count.toLocaleString();
+        try {
+          localStorage.setItem(STORAGE_KEY, String(count));
+        } catch (e) {}
+      } else {
+        visitCountEl.textContent = "0";
+      }
+    };
+
+    var fetchCount = function (endpoint) {
+      return fetch(BASE_URL + endpoint)
+        .then(function (res) {
+          if (!res.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          if (data && typeof data.value === "number") {
+            return data.value;
+          }
+          if (data && typeof data.count === "number") {
+            return data.count;
+          }
+          return null;
+        });
+    };
+
+    var cached = null;
+    try {
+      var stored = localStorage.getItem(STORAGE_KEY);
+      if (stored !== null) {
+        cached = parseInt(stored, 10);
+      }
+    } catch (e) {}
+
+    if (cached !== null && !isNaN(cached)) {
+      visitCountEl.textContent = cached.toLocaleString();
+    }
+
+    fetchCount("/hit/" + NAMESPACE + "/" + KEY)
+      .then(function (newCount) {
+        if (newCount !== null) {
+          renderCount(newCount);
         } else {
-          visitCountEl.textContent = "0";
+          return fetchCount("/get/" + NAMESPACE + "/" + KEY);
+        }
+      })
+      .then(function (currentCount) {
+        if (currentCount !== null && currentCount !== undefined) {
+          renderCount(currentCount);
+        } else if (visitCountEl.textContent === "...") {
+          renderCount(0);
         }
       })
       .catch(function () {
-        visitCountEl.textContent = "0";
+        fetchCount("/get/" + NAMESPACE + "/" + KEY)
+          .then(function (currentCount) {
+            if (currentCount !== null) {
+              renderCount(currentCount);
+            } else if (visitCountEl.textContent === "...") {
+              renderCount(0);
+            }
+          })
+          .catch(function () {
+            if (visitCountEl.textContent === "...") {
+              visitCountEl.textContent = "0";
+            }
+          });
       });
   }
 })();
